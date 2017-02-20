@@ -1,0 +1,26 @@
+function [theta_out,rho_out,inlrNum_out,theta_store,rho_store]=EliminateLines(theta_in,rho_in,inlrNum_in)
+% This function will help to eliminate lines that share almost same rho and
+% theta got from function ransac.m to find the line with local max inlrNum
+
+[Max_inlrNum,Max_Index]=max(inlrNum_in);
+%Vector_length=length(theta);
+
+% find rho values that are quite different (lager than 30) with the rho_in(Max_Index)
+diff_index=find(abs(rho_in-rho_in(Max_Index))>30);
+if (isempty(diff_index)==1)
+    theta_out=[];
+    rho_out=[];
+    inlrNum_out=[];
+    theta_store=[];
+    rho_store=[];
+else 
+theta_out=theta_in(diff_index);
+rho_out=rho_in(diff_index);
+inlrNum_out=inlrNum_in(diff_index);
+theta_store=theta_in(Max_Index);
+rho_store=rho_in(Max_Index);
+end
+end
+
+
+
