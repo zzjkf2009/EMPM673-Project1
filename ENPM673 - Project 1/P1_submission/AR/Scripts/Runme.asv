@@ -56,10 +56,14 @@ if(Num_Lines>1)
         [xi, yi] = polyxpoly(X, Y(1,:), X, Y(2,:));
       mapshow(xi,yi,'DisplayType','point','Marker','o');
     end
-else 
+if(Num_Lines>2)
 for k=1:Num_Lines-1
-[xi, yi] = polyxpoly(X, Y(1,:), X, Y(2,:));
+    for l=k+1:Num_Lines
+[xi, yi] = polyxpoly(X, Y(k,:), X, Y(l,:));
 mapshow(xi,yi,'DisplayType','point','Marker','o')
+hold on
+    end
+end
 end
 end
 %%
@@ -73,3 +77,20 @@ end
 % [in,on]=inpolygon(row,col,X,Y(1,:));
 % points=pts(find(on));
 % rad2deg(cos(theta_draw(:))/ sin(theta_draw(:)));
+%%
+clc 
+clear
+close all
+im=imread('../Data/Tag1.jpg');
+im=rgb2gray(im);    % Convert image from RGB to gray 
+[cim, r, c] = harris(im, 1, .04, 'N', 20, 'display', true);
+[Gmag,Gdir] = imgradient(im,'intermediate');
+[row,col]=find(Gmag>0.60*max(max(Gmag)));
+pts(1,:)=row;
+pts(2,:)=col;
+thDist=1;
+thInlrRatio=0.05;
+[corner]=RANSCA_corner(pts,c,r,thDist,thInlrRatio);
+hold on
+mapshow(corner(:,2),corner(:,1),'DisplayType','point','Marker','o');
+
