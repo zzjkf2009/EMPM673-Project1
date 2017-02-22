@@ -1,23 +1,37 @@
-% This is the main code for detection the four corners of a ARtag
-%one frame of a video will be given, in this frame: one person is holding a
-%paper with ARtag on it, the code here will detect the corners of the tag
+%*@File runMe.m
+%*@Author Zejiang Zeng
+%*@Copyright 2017.2-2017.5 University of Maryland, Zejiang Zeng (zzeng@terpmail.umd.edu)
+%*@Brief This is the main code for detection the four corners of a ARtag
+%        one frame of a video will be given, in this frame: one person is holding a
+%        paper with ARtag on it, the code here will detect the corners of the tag
+%*@Reference: Thanks for the toolbox from Peter Kovesi 
 %%
 clc 
 clear
 close all
-im=imread('../Data/Tag5.jpg');
+im=imread('../Data/Tag8.jpg');
 im=rgb2gray(im);    % Convert image from RGB to gray 
-[cim, r, c] = harris(im, 1, .04, 'N', 20, 'display', true);
-[Gmag,Gdir] = imgradient(im,'intermediate');
+[Gmag,Gdir] = imgradient(im,'IntermediateDifference');
 [row,col]=find(Gmag>0.60*max(max(Gmag)));
 pts(1,:)=row;
-pts(2,:)=col;
-thDist=1;
+pts(2,:)=col;  
+%     figure, imshow(im);
+%     hold on
+%     scatter(col,row)
+[cim, r, c] = harris(im, 1, .04, 'N', 20, 'display', true);
+thDist=1.7;
 thInlrRatio=0.07;
-[corner]=RANSCA_corner(pts,c,r,thDist,thInlrRatio);
+[corner]=RANSCA_corner(im,pts,c,r,thDist,thInlrRatio);
+Num_corner_find=length(corner);
 hold on
 mapshow(corner(:,2),corner(:,1),'DisplayType','point','Marker','o');
-
+% [nr,nc]=size(im);
+% [dx,dy] = gradient(double(im));
+% [x y] = meshgrid(1:nc,1:nr);
+% u = dx;
+% v = dy;
+% hold on
+% quiver(x,y,u,v)
 %%
 % clc
 % clear 
@@ -93,5 +107,73 @@ mapshow(corner(:,2),corner(:,1),'DisplayType','point','Marker','o');
 % points=pts(find(on));
 % rad2deg(cos(theta_draw(:))/ sin(theta_draw(:)));
 %%
-
-
+% clear all;
+% im=imread('../Data/Tag2.jpg');
+% im=rgb2gray(im);    % Convert image from RGB to gray 
+% [nr,nc]=size(im);
+% [dx,dy] = gradient(double(im));
+% [x y] = meshgrid(1:nc,1:nr);
+% u = dx;
+% v = dy;
+% imshow(im);
+% hold on
+% quiver(x,y,u,v)
+%%
+im=imread('../Data/Tag8.jpg'); im=rgb2gray(im);    % Convert image from
+% RGB to gray
+im(im<200) = NaN; 
+color = 50; 
+im(im>0) = color;
+figure, imshow(im)
+hold on 
+C = centerOfMass(im);
+mapshow(C(1,2),C(1,1),'DisplayType','point','Marker','o');
+%%
+clear
+close all
+% im=imread('../Data/Tag4.jpg'); 
+im=imread('../Data/Marker.jpg');
+im=rgb2gray(im);  
+newim = adjcontrast(im, 16, 0.7);
+% figure
+% imshow(newim)
+[Gmag,Gdir] = imgradient(newim,'intermediate');
+[row,col]=find(Gmag>0.60*max(max(Gmag)));
+pts(1,:)=row;
+pts(2,:)=col;
+%     figure, imshow(newim);
+%     hold on
+%     scatter(col,row)
+[cim, r, c] = harris(newim, 1, .04, 'N', 20, 'display', true);
+thDist=1.7;
+thInlrRatio=0.055;
+[corner]=RANSCA_corner(newim,pts,c,r,thDist,thInlrRatio);
+Num_corner_find=length(corner);
+hold on
+mapshow(corner(:,2),corner(:,1),'DisplayType','point','Marker','o');
+%%
+v=VideoReader('../Tag0.mp4');
+video = readFrame(v,'native');
+%%
+clear
+I1 = rgb2gray(imread('../Data/Tag4.jpg'));
+I2 = rgb2gray(imread('../Data/ref_marker.png'));
+% points1 = detectHarrisFeatures(I1);
+% points2 = detectHarrisFeatures(I2);
+points1 = detectSURFFeatures(I1);
+points2 = detectSURFFeatures(I2);
+[features1,valid_points1] = extractFeatures(I1,points1);
+[features2,valid_points2] = extractFeatures(I2,points2);
+indexPairs = matchFeatures(features1,features2);
+matchedPoints1 = valid_points1(indexPairs(:,1),:);
+matchedPoints2 = valid_points2(indexPairs(:,2),:);
+figure; showMatchedFeatures(I1,I2,matchedPoints1,matchedPoints2);
+%%
+I2 = imread('../Data/ref_marker.png');
+A=ones(220);
+for i=1:200
+    for j=1:200
+        A(i+10,j+10)=I2(i,j);
+    end
+end
+figure, imshow(A);
