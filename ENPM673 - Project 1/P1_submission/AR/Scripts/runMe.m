@@ -119,15 +119,16 @@ mapshow(corner(:,2),corner(:,1),'DisplayType','point','Marker','o');
 % hold on
 % quiver(x,y,u,v)
 %%
-im=imread('../Data/Tag8.jpg'); im=rgb2gray(im);    % Convert image from
+clear
+im=imread('../Data/ref_marker.png'); im=rgb2gray(im);    % Convert image from
 % RGB to gray
-im(im<200) = NaN; 
-color = 50; 
+im(im<0.8) = NaN; 
+color = 150; 
 im(im>0) = color;
 figure, imshow(im)
 hold on 
 C = centerOfMass(im);
-mapshow(C(1,2),C(1,1),'DisplayType','point','Marker','o');
+mapshow(C(1),C(2),'DisplayType','point','Marker','o');
 %%
 clear
 close all
@@ -177,3 +178,12 @@ for i=1:200
     end
 end
 figure, imshow(A);
+%%
+clear
+close all
+I1 = rgb2gray(imread('../Data/ref_marker.png'));
+fun = @(block_struct)...
+     mean2(block_struct.data);
+     
+B=blockproc(I1,[25 25],fun);
+B(find(B==255))=1;
