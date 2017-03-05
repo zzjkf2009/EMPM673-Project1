@@ -8,39 +8,17 @@
 
 
 
-
-%%
-% clear all
-% close all
-% im=imread('../Data/ref_marker.png');
-% % %im=imread('../Data/Tag7.jpg');
-% im=rgb2gray(im);    % Convert image from
-% % % RGB to gray
-% % im(im<200) = NaN; 
-% % color = 255; 
-% % im(im>200) = color;
-% [y x] = find( im );
-% cent = [mean(x) mean(y)];
-%   figure, imshow(im)
-%  hold on 
-% % C = centerOfMass(im);
-% %mapshow(C(1,2),C(1,1),'DisplayType','point','Marker','o');
-% mapshow(cent(1),cent(2),'DisplayType','point','Marker','o');
 %%
 clear
 close all
-im=imread('../Data/Tag6.jpg'); 
+tic
+im=imread('../Data/Tag5.jpg'); 
 %im=imread('../Data/Marker.jpg');
 %im=imread('../Data/rotated.jpg');
-im=rgb2gray(im);  
+im_gray=rgb2gray(im);  
 %newim = adjcontrast(im, 16, 0.7);
-BW_im=im2bw(im,0.8);
-% figure
-% imshow(newim)
-
-se = strel('disk',6);
-closeBW = imclose(BW_im,se);
-figure, imshow(closeBW); title('close the hole inside the tag')
+BW_im=im2bw(im_gray,0.8);
+%figure, imshow(BW_im);
 
 [Gmag,Gdir] = imgradient(BW_im,'intermediate');
 [row,col]=find(Gmag>0.60*max(max(Gmag)));
@@ -54,28 +32,35 @@ thDist=1.7; thInlrRatio=0.05;
 [OutCorner]=SortCornersCW(corner);
 Num_corner_find=length(OutCorner);
 hold on
-plot(OutCorner(:,2),OutCorner(:,1),'Color','y','Marker','o');
+mapshow(OutCorner(:,2),OutCorner(:,1),'DisplayType','point','Marker','o');
 hold off
 status = regionprops(BW_im,'BoundingBox','Orientation','Centroid');
-[~, r_fill, c_fill] = harris(closeBW, 1, .04, 'N', 20, 'display', true);
-[corner_inner,outStandInnerCorner]=FindInnerCorners(r_fill,c_fill,status(2).Centroid,OutCorner);
-figure, imshow(BW_im)
-hold on, plot(corner_inner(:,1),corner_inner(:,2),'Color','r','Marker','o');
-hold off
-[InnerCorner]=SortCornersCW(corner_inner);
+[corner_inner,outStandInnerCorner]=FindInnerCorners(r,c,status(2).Centroid,OutCorner);
+[UpRightCorner,UpRight_index]=findUpRightCorner(outStandInnerCorner,OutCorner);
+[Upleft,Botleft,BotRight]=findOtherCorners(UpRight_index,OutCorner);
 
-%%
-% clear all;
-% im=imread('../Data/Tag2.jpg');
-% im=rgb2gray(im);    % Convert image from RGB to gray 
-% [nr,nc]=size(im);
-% [dx,dy] = gradient(double(im));
-% [x y] = meshgrid(1:nc,1:nr);
-% u = dx;
-% v = dy;
-% imshow(im);
-% hold on
-% quiver(x,y,u,v)
+im_reference=imread('../Data/ref_marker.png');
+ Homo_Points_affine=[UpRightCorner(2) Upleft(2) Botleft(2) BotRight(2);
+                    UpRightCorner(1) Upleft(1) Botleft(1) BotRight(1)  ];
+                         
+Homo_Points_affine=Homo_Points_affine';   
+
+Homo_Points_plain= [ 200   200    1    1
+                     200    1     1    200 ];
+                   
+Homo_Points_plain=Homo_Points_plain';                
+                 
+%tform = projective2d(H);
+tform = fitgeotrans(Homo_Points_affine,Homo_Points_plain,'projective');
+Tansfered_im=imwarp(im,tform);
+ 
+ tform_back = fitgeotrans(Homo_Points_plain,Homo_Points_affine,'projective');
+ Tansfered_Back_im=imwarp(im_reference,tform_back);
+ 
+ toc
+  figure, imshow(Tansfered_im); title('Transferd image')      
+  figure, imshow(Tansfered_Back_im); title('Transferd back image')     
+ averageTime = toc;
 
 %%
 % % v=VideoReader('../Tag0.mp4');
@@ -106,38 +91,6 @@ hold off
 % mapshow(measurements.Centroid(1,1),measurements.Centroid(1,2),'DisplayType','point','Marker','o');
 
 %%
-% croppedImage_CM=croppedImage;
-% % croppedImage_CM(croppedImage_CM<0.5) = NaN; 
-% % color = 1; 
-% % croppedImage_CM(croppedImage_CM>0.5) = color;
-%  C = centerOfMass(croppedImage_CM);
-% figure, imshow(croppedImage_CM); title('find center of mass')
-% hold on 
-% mapshow(C(1,2),C(1,1),'DisplayType','point','Marker','o');
-% hold off
-%%
-% BW_rotate=1-BW_rotate;
-% [Gmag_rotate,Gdir_rotate] = imgradient(BW_rotate,'intermediate');
-% [row_rotate,col_rotate]=find(Gmag_rotate>0.60*max(max(Gmag_rotate)));
-% pts_rotate(1,:)=row_rotate;
-% pts_rotate(2,:)=col_rotate;
-% %     figure, imshow(newim);
-% %     hold on
-% %     scatter(col_rotate,row_rotate)
-% [cim, r_rotate, c_rotate] = harris(BW_rotate, 1, .04, 'N', 20, 'display', true);
-% thDist=1.7;
-% thInlrRatio=0.05;
-% [corner_rotate]=RANSCA_corner(BW_rotate,pts,c_rotate,r_rotate,thDist,thInlrRatio);
-% Num_corner_find_rotate=length(corner_rotate);
-% hold on
-% mapshow(corner_rotate(:,2),corner_rotate(:,1),'DisplayType','point','Marker','o');
-%%
-% corner_transpose=corner.';
-% corner_transpose_new(1,:)=corner_transpose(2,:);
-% corner_transpose_new(2,:)=corner_transpose(1,:);
-% measurements.Centroid_transpose=measurements.Centroid.';
-% dis=norm(corner_transpose_new(:,1)-measurements.Centroid_transpose)
-%%
 % Sort the four corners 
 % cor_orderd_x=corner(:,1);
 % cor_orderd_y=corner(:,2);
@@ -147,6 +100,11 @@ hold off
 % [~,order]=sort(angle);
 % cor_orderd=[cor_orderd_x(order),cor_orderd_y(order)];
 %%
-% se = strel('disk',4);
-% closeBW = imclose(BW_im,se);
-% figure, imshow(closeBW)
+% close all
+% clear
+% I1 = rgb2gray(imread('../Data/ref_marker.png'));
+% fun = @(block_struct)...
+%      mean2(block_struct.data);
+%      
+% B=blockproc(I1,[25 25],fun);
+% B(find(B==255))=1;
