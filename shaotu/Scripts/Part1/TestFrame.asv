@@ -1,0 +1,12 @@
+clear;
+clc;
+close all;
+%Test frame
+%!!!Change to your own Directory
+frame=imread('D:\Cygwin\home\shaot\ENPM673 - Project 1\P1_submission\ColorSeg\Images\TestSet\Frames\frame200.jpg');
+
+%Test estimate function
+RGBframe=reshape(RGBframe,[3 1]);
+[
+%Test detectBuoy function
+detectBuoy(frame);
