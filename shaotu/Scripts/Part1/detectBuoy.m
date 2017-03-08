@@ -5,6 +5,7 @@
 function []=detectBuoy(frame)
 
 load('CroppedBuoy.mat');
+load('CroppedBuoy.mat');
 
 DCropRed=double(reshape(CropRed, [480*640 3]));
 DCropGreen=double(reshape(CropGreen, [480*640 3]));
@@ -104,11 +105,12 @@ for i=1:480
         VectorG=PG-transpose(muG);
         TVectorG=VG*VectorG;
         
+        
         %Check whether the points are inside Ellipsoid
         GBR=((TVectorG(1))/EigG(3,3))^2;
         GBG=((TVectorG(2))/EigG(1,1))^2;
-        GBB=3*((TVectorG(3))/EigG(2,2))^2;
-        TG=GBR+GBG+GBB;
+        GBB=((TVectorG(3))/EigG(2,2))^2;
+        TG=(GBR+GBG+GBB);
         ThresholdG(v)=TG;
         v=v+1;
         if TG<1
@@ -120,9 +122,7 @@ for i=1:480
             BuoyG(i,j,2)=0;
             BuoyG(i,j,3)=0;
         end
-    end
-end
-
+        
 
 %Binary image processing
 BuoyG=uint8(BuoyG);
@@ -135,8 +135,16 @@ BuoyG=imclose(BuoyG,seY);
 
 
 %Plot Green Buoy and its contour 
-hold all;
+if ~isempty(find(BuoyG,1))
+BuoyGprops=regionprops(BuoyG);
+if max(BuoyGprops(:).Area) > CroppedGreenProps.Area
+    BuoyG=0;
+else
+    hold all;
 imcontour(BuoyG,'green');
+
+end
+end
 
 
 

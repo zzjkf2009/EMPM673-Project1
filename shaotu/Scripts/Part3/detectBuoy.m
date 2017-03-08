@@ -5,6 +5,7 @@
 function []=detectBuoy(frame)
 
 load('CroppedBuoy.mat');
+load('CroppedGreenProps.mat');
 
 DCropRed=double(reshape(CropRed, [480*640 3]));
 DCropGreen=double(reshape(CropGreen, [480*640 3]));
@@ -182,8 +183,16 @@ BuoyG=imclose(BuoyG,seY);
 
 
 %Plot Green Buoy and its contour 
-hold all;
+if ~isempty(find(BuoyG,1))
+BuoyGprops=regionprops(BuoyG);
+if max(BuoyGprops(:).Area) > CroppedGreenProps.Area
+    BuoyG=0;
+else
+    hold all;
 imcontour(BuoyG,'green');
+
+end
+end
 
 
 %Detect Yellow Buoy
