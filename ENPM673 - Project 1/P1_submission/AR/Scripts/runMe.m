@@ -6,17 +6,12 @@
 %        paper with ARtag on it, the code here will detect the corners of the tag
 %*@Reference: Thanks for the toolbox from Peter Kovesi 
 
-
-
 %%
 clear
 close all
 tic
-im=imread('../Data/Tag5.jpg'); 
-%im=imread('../Data/Marker.jpg');
-%im=imread('../Data/rotated.jpg');
+im=imread('../Data/Tag6.jpg'); 
 im_gray=rgb2gray(im);  
-%newim = adjcontrast(im, 16, 0.7);
 BW_im=im2bw(im_gray,0.8);
 %figure, imshow(BW_im);
 
@@ -39,29 +34,49 @@ status = regionprops(BW_im,'BoundingBox','Orientation','Centroid');
 [UpRightCorner,UpRight_index]=findUpRightCorner(outStandInnerCorner,OutCorner);
 [Upleft,Botleft,BotRight]=findOtherCorners(UpRight_index,OutCorner);
 
+
 im_reference=imread('../Data/ref_marker.png');
- Homo_Points_affine=[UpRightCorner(2) Upleft(2) Botleft(2) BotRight(2);
+im_lena=imread('../Data/Lena.png');
+% Corners in frame
+Homo_Points_affine=[UpRightCorner(2) Upleft(2) Botleft(2) BotRight(2);
                     UpRightCorner(1) Upleft(1) Botleft(1) BotRight(1)  ];
                          
-Homo_Points_affine=Homo_Points_affine';   
 
-Homo_Points_plain= [ 200   200    1    1
+% corners in reference tag
+Homo_Points_plain= [ 200   200    1    1       
                      200    1     1    200 ];
-                   
-Homo_Points_plain=Homo_Points_plain';                
                  
-%tform = projective2d(H);
-tform = fitgeotrans(Homo_Points_affine,Homo_Points_plain,'projective');
-Tansfered_im=imwarp(im,tform);
+                 
+Homo_Lena_Plain=[1   1  512  512;
+                 512  1   1   512];                 
+                                   
  
- tform_back = fitgeotrans(Homo_Points_plain,Homo_Points_affine,'projective');
- Tansfered_Back_im=imwarp(im_reference,tform_back);
- 
- toc
-  figure, imshow(Tansfered_im); title('Transferd image')      
-  figure, imshow(Tansfered_Back_im); title('Transferd back image')     
- averageTime = toc;
 
+H=Compute_homography(Homo_Points_affine,Homo_Points_plain);
+H_norm=H/H(3,3);  % Normalize the H
+[HomoImage,~,~]=imagehomog(im,H_norm,'m',4);
+figure, imshow(HomoImage);
+[TagID,EncodedMatrix]=Encoding(HomoImage);
+
+H_Lena=Compute_homography(Homo_Points_affine,Homo_Lena_Plain);
+
+
+
+
+text=['TagID is ' num2str(TagID)];
+FinalFrame=insertText(im,status(2).Centroid,text,'FontSize',20,'BoxColor','white','TextColor','black');
+figure, imshow(FinalFrame); title('Findal Frame deispced'); hold on
+plot(UpRightCorner(2),UpRightCorner(1),'Marker','o','Color','g')
+plot(Upleft(2),Upleft(1),'Marker','o','Color','r')
+plot(BotRight(2),BotRight(1),'Marker','o','Color','b')
+plot(Botleft(2),Botleft(1),'Marker','o','Color','y')
+hold off
+
+[augmented_image]=Augmente(im,im_lena,H_Lena);
+
+figure, imshow(augmented_image); title('OMG, I Place the Lena Image on Frame')
+toc
+RunningTime = toc
 %%
 % % v=VideoReader('../Tag0.mp4');
 % % video = readFrame(v,'native');
@@ -108,3 +123,32 @@ Tansfered_im=imwarp(im,tform);
 %      
 % B=blockproc(I1,[25 25],fun);
 % B(find(B==255))=1;
+%%
+% Homo_Points_affine=[UpRightCorner(2) Upleft(2) Botleft(2) BotRight(2);
+%                     UpRightCorner(1) Upleft(1) Botleft(1) BotRight(1)  
+%                        1                 1         1             1    ];
+% Homo_Points_plain= [ 200   200    1    1       
+%                      200    1     1    200 
+%                       1      1     1    1   ];       
+%  H_f= homography2d(Homo_Points_affine,Homo_Points_plain);
+%  H_a=Compute_homography(Homo_Points_affine,Homo_Points_plain);
+%%
+Homo_Points_Cube=[100 1 1 100;
+                  1 1 100 100];
+camera_Matrix =[1406.08415449821,0,0; 2.20679787308599, 1417.99930662800,0;1014.13643417416, 566.347754321696,1]';
+H_inv=Compute_homography(Homo_Points_Cube,Homo_Points_affine);
+p=cross(H_inv(:,1),H_inv(:,2));
+Projection_Matrix=camera_Matrix*[H_inv(:,1) H_inv(:,2) p H_inv(:,3)];
+im_cube=im;
+for i=1:100
+    for j=1:100
+        for k=1:100
+       % New_T=H\[i;j;1];
+        New_T=Projection_Matrix*[i;j;-k;1];
+        New_T=round(New_T/New_T(3,1));
+        im_cube(New_T(1,1),New_T(2 ,1),:)=0;
+        end
+    end
+end
+figure, imshow(im_cube); title('OMG, I Place the Virtual Cube on Frame')
+   
