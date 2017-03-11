@@ -69,6 +69,8 @@ if I3(1,4)==1
         q=P;
         C=C;      
 end
+
+  dec=binaryVectorToDecimal(bin);
 figure(1), imshow(q);hold on
 message = sprintf('ID of the tag = %d', dec);
 text(100,200, message, 'Color', 'r'); 
